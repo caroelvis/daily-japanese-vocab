@@ -232,7 +232,7 @@
       );
     } else {
       filtersEl.appendChild(
-        chipRow(
+        selectRow(
           "情境",
           state.sentenceScene,
           [{ value: "all", label: "全部" }].concat(
