@@ -232,7 +232,10 @@
         btn.className = "kana-cell" + (selectedId === id ? " active-sel" : "");
         btn.textContent = window.kanaChar(item, state.script);
         btn.disabled = !poolIds.has(id);
-        btn.addEventListener("click", () => onSelect(id));
+        btn.addEventListener("click", () => {
+          speak(window.kanaChar(item, state.script), 0.7);
+          onSelect(id);
+        });
         td.appendChild(btn);
         tr.appendChild(td);
       });
@@ -280,12 +283,14 @@
       if (state.autoSpeak) speak(glyph, 0.7);
       detail.innerHTML = `
         <p class="prompt">${state.script === "hiragana" ? "平假名" : "片假名"} · ${item.romaji}</p>
-        <div class="kana-huge">${glyph}</div>
+        <button type="button" class="kana-huge" id="glyph-speak" style="border:0;background:transparent;color:inherit;padding:0;width:100%;cursor:pointer">${glyph}</button>
         <p class="romaji">${other} · ${item.romaji}</p>
         <p class="note">${item.mnemonic}</p>
         <div class="example"><span class="jp">${item.example.jp}</span> · ${item.example.zh}</div>
         <button type="button" class="btn btn-primary btn-wide" id="speak-kana">發音</button>
       `;
+      const glyphBtn = detail.querySelector("#glyph-speak");
+      if (glyphBtn) glyphBtn.addEventListener("click", () => speak(glyph, 0.7));
       detail.querySelector("#speak-kana").addEventListener("click", () => speak(glyph, 0.7));
     }
 
