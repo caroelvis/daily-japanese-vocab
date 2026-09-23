@@ -14,6 +14,7 @@
   };
 
   let preferredVoice = null;
+  let player = null;
   const main = document.getElementById("main");
   const filtersEl = document.getElementById("filters");
   const modeNav = document.getElementById("mode-nav");
@@ -43,8 +44,10 @@
           let s = 0;
           const n = v.name.toLowerCase();
           if (v.lang.toLowerCase() === "ja-jp") s += 10;
-          if (n.includes("google")) s += 8;
-          if (n.includes("nanami") || n.includes("kyoko")) s += 6;
+          if (n.includes("nanami") || n.includes("七海")) s += 40;
+          if (n.includes("kyoko") || n.includes("haruka") || n.includes("ayumi")) s += 24;
+          if (n.includes("keita") || n.includes("ichiro") || n.includes("otoya")) s -= 20;
+          if (n.includes("google")) s += 4;
           return s;
         };
         return score(b) - score(a);
@@ -52,17 +55,47 @@
     preferredVoice = ranked[0] || null;
   }
 
-  function speak(text, rate) {
+  function speakBrowser(text, rate) {
     if (!window.speechSynthesis || !text) return;
     window.speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
     u.lang = "ja-JP";
-    u.rate = rate || 0.82;
+    u.rate = Math.min(rate || 0.82, 0.9);
+    u.pitch = 1.06;
+    u.volume = 0.92;
     if (preferredVoice) u.voice = preferredVoice;
     window.speechSynthesis.speak(u);
   }
 
+  function speak(text, rate) {
+    if (!text) return;
+    if (player) {
+      player.pause();
+      player.src = "";
+      player = null;
+    }
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
+    const rel = window.VOICE_FILES && window.VOICE_FILES[text];
+    if (!rel) {
+      speakBrowser(text, rate);
+      return;
+    }
+    const audio = new Audio(rel);
+    audio.playbackRate = rate && rate <= 0.75 ? 0.94 : 1;
+    player = audio;
+    let fellBack = false;
+    const fallback = () => {
+      if (fellBack || player !== audio) return;
+      fellBack = true;
+      speakBrowser(text, rate);
+    };
+    const started = audio.play();
+    if (started && started.catch) started.catch(fallback);
+    audio.addEventListener("error", fallback);
+  }
+
   function voiceLabel() {
+    if (window.VOICE_FILES) return "七海 · 柔和";
     if (!preferredVoice) return "偵測中";
     return preferredVoice.name.replace(/Google |Microsoft /g, "").split(" - ")[0];
   }
