@@ -647,7 +647,11 @@
         title: "看中文，選出正確的日文單字 · 可先聽發音",
         html: `<p class="zh center" style="font-size:1.5rem">${answer.zh}</p><div class="center"><button class="btn" data-speak>聽發音</button></div>`,
       }),
-      (opt) => `${opt.word}<span class="reading">${opt.reading}</span>`,
+      (opt) => {
+        const revealed = status === "correct" || status === "revealed";
+        const showWord = revealed && opt.id === question.answer.id && opt.word !== opt.reading;
+        return showWord ? `${opt.reading}<span class="reading">${opt.word}</span>` : opt.reading;
+      },
       (answer) => speak(answer.word, 0.82),
     );
   }
