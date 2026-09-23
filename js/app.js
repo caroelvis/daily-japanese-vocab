@@ -128,6 +128,30 @@
     return group;
   }
 
+  function selectRow(label, value, options, onPick) {
+    const group = document.createElement("div");
+    group.className = "tag-group";
+    const caption = document.createElement("span");
+    caption.className = "tag-label";
+    caption.textContent = label;
+    const wrap = document.createElement("div");
+    wrap.className = "select-wrap";
+    const select = document.createElement("select");
+    select.setAttribute("aria-label", label);
+    options.forEach((opt) => {
+      const option = document.createElement("option");
+      option.value = opt.value;
+      option.textContent = opt.label;
+      if (opt.value === value) option.selected = true;
+      select.appendChild(option);
+    });
+    select.addEventListener("change", () => onPick(select.value));
+    wrap.appendChild(select);
+    group.appendChild(caption);
+    group.appendChild(wrap);
+    return group;
+  }
+
   function renderModeNav() {
     const modes =
       state.content === "kana"
@@ -194,7 +218,7 @@
       );
     } else if (state.content === "words") {
       filtersEl.appendChild(
-        chipRow(
+        selectRow(
           "分類",
           state.wordCategory,
           [{ value: "all", label: "全部" }].concat(
