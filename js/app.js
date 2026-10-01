@@ -444,7 +444,16 @@
   }
 
   function threeOptions(answer, pool) {
-    const rest = shuffle(pool.filter((i) => i.id !== answer.id)).slice(0, 2);
+    // Skip distractors that share a romaji with the answer or each other (お/を, じ/ぢ, ず/づ),
+    // so options never look or sound identical.
+    const seen = new Set(answer.romaji ? [answer.romaji] : []);
+    const rest = [];
+    for (const i of shuffle(pool.filter((i) => i.id !== answer.id))) {
+      if (i.romaji && seen.has(i.romaji)) continue;
+      if (i.romaji) seen.add(i.romaji);
+      rest.push(i);
+      if (rest.length === 2) break;
+    }
     return shuffle([answer].concat(rest));
   }
 
@@ -517,7 +526,7 @@
         const btn = document.createElement("button");
         btn.type = "button";
         btn.className = "option";
-        btn.innerHTML = optionLabel(opt);
+        btn.innerHTML = optionLabel(opt, question);
         const revealed = status === "correct" || status === "revealed";
         if (revealed && opt.id === question.answer.id) btn.classList.add("correct");
         if (pickedId === opt.id && opt.id !== question.answer.id && (status === "wrong" || status === "revealed"))
@@ -568,40 +577,35 @@
   }
 
   function renderKanaQuiz() {
-    function promptFor(id) {
-      const kinds = ["romaji", "char", "listen"];
-      let n = 0;
-      for (let i = 0; i < id.length; i++) n = (n * 31 + id.charCodeAt(i)) >>> 0;
-      return kinds[n % 3];
-    }
+    const kinds = ["romaji", "char", "listen"];
     renderQuiz(
       kanaPool(),
       (answer) => {
-        const kind = promptFor(answer.id);
+        const kind = pick(kinds);
         const glyph = window.kanaChar(answer, state.script);
         if (kind === "listen") {
           return {
+            kind,
             title: "聽發音，選出假名",
             html: `<div class="center" style="margin-top:1.25rem"><button class="btn btn-primary" data-speak>聽發音</button></div>`,
           };
         }
         if (kind === "char") {
           return {
+            kind,
             title: "看假名，選出羅馬拼音",
             html: `<div class="kana-huge">${glyph}</div><div class="center"><button class="btn" data-speak>聽發音</button></div>`,
           };
         }
         return {
+          kind,
           title: "看羅馬拼音，選出假名",
           html: `<div class="kana-huge" style="font-size:3rem">${answer.romaji}</div><div class="center"><button class="btn" data-speak>聽發音</button></div>`,
         };
       },
-      (opt) => {
-        const kind = promptFor(questionSafeId());
-        function questionSafeId() {
-          return opt && main.querySelector(".kana-huge") ? "x" : opt.id;
-        }
-        return window.kanaChar(opt, state.script) + ` <span class="reading">${opt.romaji}</span>`;
+      (opt, question) => {
+        if (question && question.prompt.kind === "char") return opt.romaji;
+        return window.kanaChar(opt, state.script);
       },
       (answer) => speak(window.kanaChar(answer, state.script), 0.7),
     );
